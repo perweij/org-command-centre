@@ -1,0 +1,203 @@
+#+TITLE:     org-mode command centre
+#+AUTHOR:    Per Weijnitz
+#+EMAIL:     per.weijnitz@gmail.com
+#+DATE:      2017-04-22
+#+DESCRIPTION: 
+#+KEYWORDS: 
+#+LANGUAGE:  en
+#+OPTIONS:   H:3 num:t toc:t \n:nil @:t ::t |:t ^:t -:t f:t *:t <:t
+#+OPTIONS:   TeX:t LaTeX:nil skip:nil d:nil todo:nil pri:nil tags:not-in-toc
+#+EXPORT_EXCLUDE_TAGS: exclude
+#+STARTUP:   showall
+#+MENU:      Buffers
+#+LICENSE:   GNU GENERAL PUBLIC LICENSE Version 3
+
+
+
+* Changes
+ - Apr 22 2017: initial version
+
+ | Status:   | Work in progress                              |
+ | Location: | [[https://github.com/perweij/org-command-centre]] |
+
+
+
+
+* Background
+Working as a programmer also entails tasks such as managing remote
+files and processes in test environments, running numerous scripts and
+tools to solve everyday problems and perform tasks, and monitoring
+resources such as diskspace, certificate expiration dates etc on
+numerous machines.
+
+When my professional journey started two decades ago, I used the most
+naive of approaches. Where sequences of commands were needed, I
+entered them into scripts and placed somewhere. This worked as
+long as I could handle these problems:
+ 0. remembering that the scripts existed (even after months of doing other stuff)
+ 1. remembering how the scripts worked
+ 2. remembering where I had placed the scripts, especially the latest version in case
+   I used the copies of the scripts on several servers.
+
+Later on, I found less naive ways of doing things. Managing scripts in
+a version control system eliminated problem 3. Writing man-pages, or
+other kinds of documents could lessen problem 2 - even though it also
+added the complexity of more files.
+
+20 years later I still write scripts for bigger tasks, but for most
+cases I use another, arguably superior way of managing everyday life at work. It
+solves all three problems listed above, at least for me. The solution
+works like this:
+ - I have a single [[http://orgmode.org/][org-document]] as a central command and information
+   centre.  I have bound the opening of the document to function key
+   F12, to make it globally accessible, and it is automatically loaded
+   as a start screen for GNU Emacs.  Having all information and
+   commands collected in one easily searched org-document lessens the
+   risk of forgetting routines and commands, solving problem 1.
+ - I have moved the contents of my many small scripts into the
+   org-file structure. The relocated script contents are still
+   executable thanks to [[http://orgmode.org/worg/org-contrib/babel/][org-babel]].  This solves problem 3.
+ - I have placed documentation immediately next to each section of
+   org-babel code. This is in the great tradition of [[https://en.wikipedia.org/wiki/Literate_programming][literate
+   programming]], an idea presented by [[http://www-cs-faculty.stanford.edu/~uno/][Donald Knuth]]. Placing information
+   about how to run commands right next to the code is efficient as
+   you do not need separate documents, and it is as easy to update the
+   instructions as the code itself. This solves problem 2.
+
+
+
+* Purpose
+I will try to share a couple of recipes here, for how to solve
+some typical programmer tasks in the manner described above.
+
+Staying true to the principles of literate programming, this very
+document is also the executable code. You can find the document's
+source [[https://raw.githubusercontent.com/perweij/org-command-centre/master/README.org][here]].
+
+
+
+* Setup
+I strongly suggest you use the latest stable version of GNU Emacs to
+avoid problems with unsupported functions in these recipies.
+
+If you are unfamiliar with org-babel, you could start by reading the
+recommended [[anchor_links][links]] at the end of this document. I will try to provide
+enough information here to get beginners started. You will want to add
+your programming languages of choice to your org configuration (or
+just [[recipe_custom][stick it into your org-file directly]]). Here is a decent, basic
+configuration of org-babel:
+
+
+#+name: config
+#+begin_src emacs-lisp
+
+ ;; So you can follow org-links with Enter (as well as C-l C-o)
+ (setq org-return-follows-link t)
+ 
+ ;; fontify local blocks
+ (setq org-confirm-babel-evaluate nil
+       org-src-fontify-natively t
+       org-src-tab-acts-natively t)
+ 
+ ;; list some of your languages
+ (org-babel-do-load-languages
+  'org-babel-load-languages
+  '((sh         . t)
+    (js         . t)
+    (emacs-lisp . t)
+    (perl       . t)
+    (python     . t)))
+#+end_src
+
+
+
+* Usage
+A core function of org-babel is executing code blocks. A core
+function of org is [[http://orgmode.org/manual/Hyperlinks.html#Hyperlinks][org links]]. A code block is executed by placing the
+cursor on a code block and pressing =C-c C-c=. An org link is followed
+by placing the cursor on it and pressing =C-l C-o=. If you are reading
+this document in GNU Emacs, and have enabled the emacs-lisp
+programming language in your configuration, you could try the
+example below, evaluating the s-expression =(emacs-version)=:
+
+#+name: emacs_version
+#+begin_src emacs-lisp
+; #+name: startup        ; to get complete block syntax in HTML publishing
+; #+begin_src emacs-lisp
+ (emacs-version)
+; #+end_src
+#+end_src
+
+Executing the code block will insert the program's output right below the block, like this:
+
+#+RESULTS:
+: ; #+RESULTS:
+: GNU Emacs 25.2.1 (x86_64-unknown-linux-gnu, GTK+ Version 2.24.25)
+:  of 2017-04-22
+
+Giving each code block a =name= is smart for two reasons. First it
+makes it easier to remember what it does, and second it enables you to
+call this block from other blocks, and use its output
+programmatically, like a function.
+
+In this example, the code block simply places the output after the
+code block as text. There are many other useful ways to [[http://orgmode.org/manual/results.html][direct and
+format the output]].
+
+
+
+* Recipes
+
+<<recipe_custom>>
+** Adding settings and help functions to an org-babel document
+You can keep settings and helper functions in the document and make
+use of them in your codeblocks, for example settings such as your
+remote user account name, key directories etc, and helper functions to
+start certain external processes that are often used.
+
+
+ - Add a new section to your org-document, for example
+#+name: startup
+#+begin_src emacs-lisp
+; * Document customisations and settings
+; #+name: startup
+; #+begin_src emacs-lisp
+ 
+ ;; settings
+ (defvar remoteuser "thedude")
+ 
+ ;; helpers
+ (defun pw/remote-tail-f (directory file)
+  (interactive)
+  (and (switch-to-buffer directory t nil))
+       (cd directory)
+       (async-shell-command (concat "tail -n 2000 -f " file) directory))
+
+; #+end_src
+#+end_src
+
+
+ - Add the following line to the top of your org-document:
+: # -*- eval: (progn (org-babel-goto-named-src-block "startup")(setq org-confirm-elisp-link-function 'y-or-n-p)(org-babel-execute-src-block)) ; -*-
+
+Each time you open this document, GNU Emacs will ask for permission to
+evaluate the code in the first line - press =y=. That line will in
+turn locate and execute the code you placed in the customisation code
+block.
+
+
+*** Usage
+As you can add just about any clever code to a startup codeblock,
+there is of course an infinite number of ways you could use it. Here is a
+simple example of using the function defined above in an org-link:
+: Connect with [[elisp:(pw/remote-tail-f (concat "/" remoteuser "@fsf.freedom.org:/var/log") "hello.log")][tail hello.log]].
+
+
+
+<<anchor_links>>
+* External links
+ - [[https://www.gnu.org/software/emacs/manual/html_node/emacs/index.html#Top][GNU Emacs documentation]]
+ - [[http://orgmode.org/][org-mode]]
+ - [[http://www.howardism.org/Technical/Emacs/literate-programming-tutorial.html][Introduction to literate programming in org-babel]]
+ - [[http://orgmode.org/worg/org-contrib/babel/intro.html][Introduction to org-babel]]
+ - [[http://www.pirilampo.org/org-mode/syntax][org-mode syntax examples]]
