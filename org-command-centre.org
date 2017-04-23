@@ -72,7 +72,7 @@ some typical programmer tasks in the manner described above.
 
 Staying true to the principles of literate programming, this very
 document is also the executable code. You can find the document's
-source [[https://raw.githubusercontent.com/perweij/org-command-centre/master/README.org][here]].
+source [[https://raw.githubusercontent.com/perweij/org-command-centre/master/org-command-centre.org][here]].
 
 
 
